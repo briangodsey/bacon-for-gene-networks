@@ -1,8 +1,0 @@
-function[ par ] = updateGAMscaleHYP( D, par, priors, info )
-
-expect = getExpectations( par );
-
-par.gamscaleHYPshape = priors.gamscaleHYPshape + sum(sum(priors.gamshape));
-par.gamscaleHYPscale = priors.gamscaleHYPscale + sum(sum(expect.gam));
-
-end

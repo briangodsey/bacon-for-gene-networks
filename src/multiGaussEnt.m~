@@ -1,6 +1,0 @@
-function [ ent ] = multiGaussEnt( prec, N )
-
-det(prec)
-ent = log( ((2*pi*exp(1))^N *1/det(prec) )^0.5 );
-ent = 0.5*( N*log(2*pi*exp(1)) - log(det(prec))
-end
