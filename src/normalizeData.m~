@@ -1,0 +1,1 @@
+function nD = normalizeData( D )

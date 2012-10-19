@@ -1,0 +1,206 @@
+function[ llh ] = geneInterLikelihood( D, par, priors, info )
+
+expect = getExpectations(par);
+
+%% intQlogP
+
+mumat = par.mumean(info.timeD,:);
+
+muSqExp = par.mumean.^2 + 1./(par.muprec);
+muSqMat = muSqExp(info.timeD,:);
+
+partD =  sum(sum(( -0.5*log(2*pi) + 0.5*gamExpLogx(par.Lshape,par.Lscale) ) ...
+		 -0.5*expect.L * (D.^2 + muSqMat - 2*D.*mumat) ));
+
+Fmeans = par.Fmean(:,info.Tdat+1);
+Fprecmat = repmat(0, size(Fmeans) );
+for i = 1:size(Fprecmat,2)
+    Fprecmat(:,i) = diag(par.Fprec{info.Tdat(i)+1});
+end
+expSqF = Fmeans.^2 + 1./Fprecmat;
+
+tempMU = zeros(1,info.G);
+for g = 1:info.G
+    %% *temp* is a nclus x T matrix
+    temp = par.mship(:,g)'* ( -0.5*log(2*pi) ...
+			     + 0.5*gamExpLogx(par.gamshape,par.gamscale) ...
+			     -  0.5*expect.gam ...
+			     .* ( repmat(muSqExp(:,g)',info.nclus,1) + expSqF ...
+				 - 2*repmat(par.mumean(:,g)',info.nclus,1).*Fmeans ) );
+    %% sum over all *t*
+    tempMU(g) = sum(temp);
+end
+partMU = sum(tempMU);
+
+tempsumF = repmat(0,1,info.Tmax+1);
+tempsummat = zeros(info.Tmax+1,6);
+for tind = info.Tall+1
+
+  if tind==1
+    tempsumF(tind) = (par.Fmean(:,tind)-priors.Fmean1)' * priors.Fprec1 ...
+	* (par.Fmean(:,tind)-priors.Fmean1) ...
+	+ trace( priors.Fprec1 / par.Fprec{1} );
+  else
+    expFsq = par.Fmean(:,tind)'*expect.SIG*par.Fmean(:,tind) ...
+	+ trace( expect.SIG / par.Fprec{tind} );
+    Fvec = par.Fmean(:,tind-1);
+    Fprec = par.Fprec{tind-1};
+    covSF = zeros(info.nclus);
+    for i = 1:info.nclus
+      for j = 1:info.nclus
+	expSS = par.Smean(i,:)'*par.Smean(j,:);
+	if i == j
+	  expSS = expSS + pinv(par.Sprec{i});
+	end
+	covSF(i,j) = Fvec'*expSS*Fvec + trace(expSS/Fprec) ...
+	    - par.Smean(i,:)*Fvec*par.Smean(j,:)*Fvec;
+      end
+    end
+    expSFsq = (par.Smean*Fvec)'*expect.SIG*(par.Smean*Fvec) ...
+	+ trace( expect.SIG * covSF );
+    expSconstSq = par.Sconstmean'*expect.SIG*par.Sconstmean ...
+	+ trace(expect.SIG/diag(par.Sconstprec));
+    expFtSF = par.Fmean(:,tind)' * expect.SIG * par.Smean*par.Fmean(:,tind-1);
+    expFtSconst = par.Fmean(:,tind)' * expect.SIG * par.Sconstmean;
+    expSFSconst = (par.Smean*par.Fmean(:,tind-1))' * expect.SIG * par.Sconstmean;
+
+    tempsumF(tind) = expFsq +expSFsq +expSconstSq ...
+	-2*expFtSF -2*expFtSconst +2*expSFSconst;
+
+    tempsummat(tind,:) = [ expFsq expSFsq expSconstSq expFtSF expFtSconst expSFSconst];
+  end
+end
+
+tempF = zeros(1,info.Tmax+1);
+tempF(1) = -info.nclus/2*log(2*pi) ...
+    + 0.5*logdet(priors.Fprec1) ...
+    - 0.5*tempsumF(1);
+for tind = 2:(info.Tmax+1)
+  tempF(tind) = -info.nclus/2*log(2*pi) ...
+      + 0.5*sum(gamExpLogx(par.SIGshape,par.SIGscale)) ...
+      - 0.5*tempsumF(tind);
+end
+partF = sum(tempF);
+
+partL = priors.Lshape*log(priors.Lscale) - gammaln(priors.Lshape) ...
+    + (priors.Lshape-1)*gamExpLogx(par.Lshape,par.Lscale) ...
+    - priors.Lscale*expect.L;
+
+partgamscaleHYP = priors.gamscaleHYPshape*log(priors.gamscaleHYPscale) ...
+    - gammaln(priors.gamscaleHYPshape)  ...
+    + (priors.gamscaleHYPshape-1)*gamExpLogx(par.gamscaleHYPshape,par.gamscaleHYPscale) ...
+    - priors.gamscaleHYPscale*expect.gamscaleHYP;
+partGAM = partgamscaleHYP ...
+    + sum(sum( priors.gamshape.*gamExpLogx(par.gamscaleHYPshape,par.gamscaleHYPscale) ...
+	      - gammaln(priors.gamshape) ...
+	      + (priors.gamshape-1).* gamExpLogx(par.gamshape,par.gamscale) ...
+	      - expect.gamscaleHYP.*expect.gam ));
+
+partSIGscaleHYP = priors.SIGscaleHYPshape*log(priors.SIGscaleHYPscale) ...
+    - gammaln(priors.SIGscaleHYPshape)  ...
+    + (priors.SIGscaleHYPshape-1)*gamExpLogx(par.SIGscaleHYPshape,par.SIGscaleHYPscale) ...
+    - priors.SIGscaleHYPscale*expect.SIGscaleHYP;
+partSIG = partSIGscaleHYP + ...
+    sum( priors.SIGshape.*gamExpLogx(par.SIGscaleHYPshape,par.SIGscaleHYPscale) ...
+	- gammaln(priors.SIGshape) ...
+	+ (priors.SIGshape-1).*gamExpLogx(par.SIGshape,par.SIGscale) ...
+	- expect.SIGscaleHYP.*diag(expect.SIG)' );
+
+partSconst = sum( -0.5*log(2*pi) + 0.5*log(priors.Sconstprec) ...
+		 - 0.5*priors.Sconstprec ...
+		 .* ( par.Sconstmean.^2 + 1./par.Sconstprec ...
+		     - 2*par.Sconstmean.*priors.Sconstmean ...
+		     + priors.Sconstmean.^2) );
+temp = repmat(0,1,info.nclus);
+for j = 1:info.nclus
+    temp(j) = -info.nclus/2*log(2*pi) +0.5*logdet(priors.Sprec{j}) ...
+	- 0.5*( (par.Smean(j,:)-priors.Smean(j,:)) ...
+	       * priors.Sprec{j} * (par.Smean(j,:)-priors.Smean(j,:))' ...
+	       + trace( priors.Sprec{j} / par.Sprec{j} ) );
+end
+partS = partSconst + sum(temp);
+
+temp = par.mship .* log(priors.mship);
+temp(~priors.mship) = 0;
+partmship = sum(sum( temp ))
+%%partmship = sum(sum( par.mship .* log(priors.mship) ))
+
+
+QPparts = [ partD partMU partF partL partGAM partSIG partS partmship ];
+intQlogP = sum(QPparts);
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% int QlogQ (entropy of posteriors)
+
+partMU = sum(sum( -gaussEnt(par.muprec) ));
+
+temp = repmat(0,1,info.Tmax+1);
+for tind = info.Tall+1
+  %%par.Fprec{tind}
+  temp(tind) = -multiGaussEnt(par.Fprec{tind});
+end
+partF = sum(temp);
+
+partL = -gamEnt(par.Lshape,par.Lscale);
+
+partGAMscaleHYP = -gamEnt(par.gamscaleHYPshape,par.gamscaleHYPscale);
+partGAM = partGAMscaleHYP + sum(sum( -gamEnt(par.gamshape,par.gamscale) ));
+
+partSIGscaleHYP = -gamEnt(par.SIGscaleHYPshape,par.SIGscaleHYPscale);
+partSIG = partSIGscaleHYP + sum( -gamEnt(par.SIGshape,par.SIGscale) );
+
+%% partSmeanMiddleGuy  = sum(sum( -gaussEnt(par.SmeanHYPprec) ));
+%% partSmeanHYPdoublePREC = -gamEnt(par.SmeanHYPdoublePRECshape, ...
+%%     par.SmeanHYPdoublePRECscale);
+%% partSmeanHYP = -gaussEnt(par.SmeanHYPprec);
+%% partSprecHYP = -gamEnt(par.SprecHYPshape,par.SprecHYPscale);
+%% partSconst = sum( -gaussEnt(par.Sconstprec) );
+%% temp = repmat(0,1,info.nclus);
+%% for j = 1:info.nclus
+%%     temp(j) = -multiGaussEnt(par.Sprec{j});
+%% end
+%% partS = partSmeanMiddleGuy + partSmeanHYPdoublePREC + partSmeanHYP ...
+%%     + partSprecHYP + partSconst + sum(temp);
+
+partSconst = sum( -gaussEnt(par.Sconstprec) );
+temp = repmat(0,1,info.nclus);
+for j = 1:info.nclus
+    temp(j) = -multiGaussEnt(par.Sprec{j});
+end
+partS = partSconst + sum(temp);
+
+temp = par.mship .* log(par.mship);
+temp(~par.mship) = 0;
+partmship = sum(sum( temp ))
+
+
+QQparts = [ partMU partF partL partGAM partSIG partS partmship ];
+intQlogQ = sum(QQparts);
+
+%% put them together
+
+%%QPparts
+%%QQparts
+%%[ intQlogP intQlogQ ]
+
+llh = intQlogP - intQlogQ;
+%%llh = [ intQlogP-intQlogQ QPparts(1) QPparts(2:7)-QQparts ];
+%%llh = [ intQlogP-intQlogQ QPparts(1) QPparts(2:7)-QQparts sum(tempsummat,1) ];
+
+%%sum(tempsummat,1)
+
+%llh = partMU2;
+%123
+
+if real(llh) ~= llh
+    par.gamshape
+    par.gamscale
+    par.gamscaleHYPshape
+    par.gamscaleHYPscale
+    par.SIGshape
+    par.SIGscale
+    [ intQlogP-intQlogQ QPparts 0/0 QQparts ]
+    error('llh not real')
+end
+
+end

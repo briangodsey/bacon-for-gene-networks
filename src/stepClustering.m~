@@ -1,0 +1,6 @@
+function[ centers ] = stepClustering( par, info )
+
+mship = getMembership( par, info );
+centers = 
+
+end

@@ -1,0 +1,74 @@
+function[ par priors ] = updateVB( D, par, priors, info )
+
+12
+
+llhmat1 = geneInterLikelihood( D, par, priors, info );
+
+tic;
+priors = updateHyperpriors( D, par, priors, info );
+toc
+
+llhmat2 = geneInterLikelihood( D, par, priors, info );
+llhmat2-llhmat1
+llhmat1 = llhmat2;
+
+tic;
+par = getMembership( par, priors, info, 1, D );
+toc
+
+llhmat2 = geneInterLikelihood( D, par, priors, info );
+llhmat2-llhmat1
+llhmat1 = llhmat2;
+
+tic;
+par = forwardPass( D, par, priors, info );
+toc
+
+llhmat2 = geneInterLikelihood( D, par, priors, info );
+llhmat2-llhmat1
+llhmat1 = llhmat2;
+
+
+tic;
+par = updateGAM( D, par, priors, info );
+toc
+
+llhmat2 = geneInterLikelihood( D, par, priors, info );
+llhmat2-llhmat1
+llhmat1 = llhmat2;
+
+tic;
+par = updateL( D, par, priors, info );
+toc
+
+llhmat2 = geneInterLikelihood( D, par, priors, info );
+llhmat2-llhmat1
+llhmat1 = llhmat2;
+
+tic;
+par = updateSIG( D, par, priors, info );
+toc
+
+llhmat2 = geneInterLikelihood( D, par, priors, info );
+llhmat2-llhmat1
+llhmat1 = llhmat2;
+
+tic;
+par = updateS( D, par, priors, info );
+toc
+
+llhmat2 = geneInterLikelihood( D, par, priors, info );
+llhmat2-llhmat1
+llhmat1 = llhmat2;
+
+par = backwardPass( D, par, priors, info );
+
+par = updateGAM( D, par, priors, info );
+par = updateL( D, par, priors, info );
+par = updateSIG( D, par, priors, info );
+par = updateS( D, par, priors, info );
+
+
+%%llhmat-repmat(llhmat(1,:),size(llhmat,1),1)
+
+end

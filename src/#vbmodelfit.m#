@@ -1,0 +1,128 @@
+function[ par priors finalllh iter ] = vbmodelfit( D, priors, infor )
+
+  %%function[ par ] = vbmodelfit( D, priors, infor )
+
+  maxiters = [ 500 2000 ];
+  llhvec = [];
+
+  %% this parameter sets the number of initial updates to be done, as well as
+  %% the number of iterations between llh calculation
+  initialIterations = 1;
+  displayIteration = 100;
+
+
+  %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  par = setpar(D, priors, infor);
+
+  if infor.nclus == size(D{1},2)
+    doclustering = 0;
+  else
+    doclustering = 1;
+  end
+
+  if ~doclustering || infor.nclus==infor.G
+    par.mship = eye(infor.nclus);
+    priors.mship = eye(infor.nclus);
+  end
+
+  if( infor.G ~= size(D{1},2) )
+    disp('Adjusting infor.G to reflect data set size.\n');
+    infor.G = size(D{1},2);
+  end
+
+  %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %% initialize some parameters to avoid possible problems
+
+  %%par = initClust( D, par, infor );
+
+  iter = 0;
+  llh = 1;
+  oldllh = -1e11;
+
+  %% fit *mu* and *L* to the data first
+  for i = 1:10 %maxiters(1)
+  %% while abs(llh-oldllh) > infor.G  && iter<maxiters(1)
+    iter = iter+1;
+    for exper = 1:size(D,2)
+      for t = infor.Tdat{exper}
+	par = updateMU( t, exper, D, par, priors, infor );
+      end
+      par = updateL( exper, D, par, priors, infor );
+    end
+    
+    %% if round(iter/displayIteration)==iter/displayIteration
+    %%   oldllh = llh;
+    %%   llh = geneInterLikelihood( D, par, priors, infor );
+    %%   llhvec = [ llhvec; llh ];
+    %%   disp( [ iter abs(llh-oldllh) ] );
+    %% end
+  end
+
+  disp( [ 0 0 iter llh ] );
+
+  for exper=1:size(D,2)
+    par.exper{exper}.gamshape(:,:) = 1;
+    for t = 1:infor.Tmax{exper}+1
+      par.exper{exper}.Fprec{t} = diag(1./var(par.exper{exper}.Fmean,1,2));
+    end
+  end
+
+  %% pre-calculated for updateF()
+  %% it used to be inside the function but it was nearly 100%
+  %% of the compute time, computed for each t. Duh.
+  Scovarray = zeros(infor.nclus,infor.nclus,infor.nclus);
+  for k = 1:infor.nclus
+    Scovarray(k,:,:) = pinv(par.Sprec{k});
+  end
+
+  %% fit the *F*, *GAM*, and add *mship*
+  oldllh = -1e11;
+  %%while abs(llh-oldllh) > infor.G  && iter<maxiters(1)
+  for i = 1:10 %%maxiters(1)
+    iter = iter+1;
+    for exper = 1:size(D,2)
+      par = forwardPass( exper, D, par, priors, infor, Scovarray );
+      par = updateL( exper, D, par, priors, infor );
+      par = updateGAM( exper, D, par, priors, infor );
+    end
+    
+    %% if round(iter/displayIteration)==iter/displayIteration
+    %%   oldllh = llh;
+    %%   llh = geneInterLikelihood( D, par, priors, infor );
+    %%   llhvec = [ llhvec; llh ];
+    %%   disp( [ iter abs(llh-oldllh) ] );
+    %% end
+  end
+
+  disp( [ 0 0 iter llh ] );
+
+  %%length(llhvec)
+  oldllh = -1e11;
+  while abs(llh-oldllh) > infor.G  && iter<maxiters(2)
+  %% for i = 1:100
+    [ par priors ] = updateVB( D, par, priors, infor, iter, doclustering );
+    iter = iter+1;
+    
+    if round(iter/displayIteration)==iter/displayIteration
+      oldllh = llh;
+      llh = geneInterLikelihood( D, par, priors, infor );
+      llhvec = [ llhvec; llh ];
+      disp( [ iter abs(llh-oldllh) ] );
+      %% iter
+      %% abs(llh-oldllh)
+    end
+  end
+  
+  totaliter = iter
+
+  %% rng = 1:size(llhvec,1);
+  %% llhvec = llhvec - repmat(llhvec(rng(1),:),size(llhvec,1),1);
+  %% figure; plot(llhvec(rng,:));
+  %% %%figure; plot(llhvec(rng,1)); title('fits for D');
+  %% %%figure; plot(llhvec(rng,4:size(llhvec,2))); title('remaining llhs');
+  %% llhvec(rng,:)
+
+  finalllh = llh(1);
+
+end

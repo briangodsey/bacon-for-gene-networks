@@ -1,0 +1,46 @@
+function[ par ] = updateGAM( exper, D, par, priors, infor )
+
+  par = updateGAMscaleHYP( exper, D, par, priors, infor );
+
+  expect = getExpectations( par.exper{exper} );
+  %%expSq = getExpOfSquares( par );
+
+  gsmat = zeros(size(par.exper{exper}.gamscale));
+  for tind = infor.Tdatind{exper};
+    ftind = infor.Tdat{exper}(tind)+1;
+    pinvFprec = pinv(par.exper{exper}.Fprec{ftind});
+
+    %% old, slow loop; EDIT: I could speed this up, but not now
+    for i = 1:infor.nclus
+      gsmat(i,tind) = par.mship(i,:) ...
+    	  * ( par.exper{exper}.mumean(tind,:).^2 ...
+    	     + 1./par.exper{exper}.muprec(tind,:) ...
+    	     + par.exper{exper}.Fmean(i,ftind)^2 ...
+    	     + pinvFprec(i,i) ...
+    	     - 2 * par.exper{exper}.mumean(tind,:) ...
+    	     * par.exper{exper}.Fmean(i,ftind) )';
+    end
+    
+    %% %% vectorize! zoom! OOPS; Doesn't work.
+    %% tic
+    %% gsmat(:,tind) = par.mship ...
+    %% 	* ( par.exper{exper}.mumean(tind,:).^2 ...
+    %% 	   + 1./par.exper{exper}.muprec(tind,:) )' ...
+    %% 	+ par.mship ...
+    %% 	* (par.exper{exper}.Fmean(:,ftind).^2 ...
+    %% 	+ diag(pinvFprec)) ...
+    %% 	- 2 * par.mship * par.exper{exper}.mumean(tind,:)' ...
+    %% 	.* par.exper{exper}.Fmean(:,ftind) ;
+    %% toc
+
+  end
+
+  %% put the pieces together for the parameter update
+  par.exper{exper}.gamshape = priors.exper{exper}.gamshape ...
+      + 0.5*repmat(sum(par.mship,2),1,length(infor.Tdat{exper}));
+
+  par.exper{exper}.gamscale = expect.gamscaleHYP + 0.5*gsmat;
+
+
+
+end

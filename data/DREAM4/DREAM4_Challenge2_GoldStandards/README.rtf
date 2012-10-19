@@ -1,0 +1,81 @@
+{\rtf1\ansi\ansicpg1252\cocoartf949\cocoasubrtf460
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue255;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww8780\viewh8660\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\f0\b\fs28 \cf0 Readme
+\b0\fs24 \
+\
+This archive contains the gold standards of the three subchallenges of the DREAM4 
+\i in silico
+\i0  network challenge. A description of the challenges can be found on the DREAM website:\
+\
+\cf2 \ul \ulc2 http://wiki.c2b2.columbia.edu/dream/index.php/D4c2\
+\cf0 \ulnone \
+Additional information is available on the GeneNetWeaver (GNW) website (\cf2 \ul \ulc2 http://gnw.sourceforge.net\cf0 \ulnone ), including:\
+- additional gene-expression datasets\
+- protein concentration datasets\
+- the datasets without noise\
+- the actual names of the genes in e.coli and yeast\
+- the perturbations that were applied to generate the time series and the multifactorial perturbation datasets\
+- images of the network graphs\
+- and more...\
+\
+\
+
+\b Size 10 and Size 100
+\b0 \
+\
+These two directories contain the gold standards for the 
+\i size 10
+\i0  and 
+\i size 100 
+\i0 subchallenges. The files 
+\i *goldstandard.tsv 
+\i0 contain the true network structures (i.e., a list of edges that are present in the network). \
+\
+The gold standards for the bonus round can be found in the 
+\i Bonus round 
+\i0 subdirectory. The files 
+\i *nonoise_dualknockouts.tsv
+\i0  contain the steady-states of the double knockouts that were asked to be predicted in the bonus round. This data is noise-free: it was simulated using ordinary differential equations (and not stochastic differential equations as for the training data) and no experimental noise (measurement error) was added.\
+\
+Note that we also evaluated the submitted predictions using a gold standard with the same type of noise as in the training data. This had a negligible effect on the results and did not affect the ranking of teams. Noisy dual-knockout datasets are available in the additional information mentioned above.\
+\
+Remember that the indexes of the genes that were knocked out in each double-knockout experiment are given in the files 
+\i *dualknockouts_indexes.tsv
+\i0 , which are part of the training dataset available at: \cf2 \ul \ulc2 http://wiki.c2b2.columbia.edu/dream/data/DREAM4\cf0 \ulnone .\
+\
+\
+
+\b Size 100 Multifactorial\
+
+\b0 \
+The files *goldstandard.tsv contain the true network structures, as mentioned above.\
+\
+The gene networks of this subchallenge are identical to the ones of the 
+\i Size 100 
+\i0 subchallenge, we just randomly renamed all the nodes. The files 
+\i *goldstandard_ref.tsv 
+\i0 in the directory called 
+\i Mapping
+\i0  contain the mapping of gene names. The original gene names in the 
+\i Size 100 
+\i0 subchallenge are given in the second column, and the corresponding gene names in the 
+\i Size 100 Multifactorial
+\i0  subchallenge are given in the first column.\
+\
+\
+
+\b Questions / Feedback
+\b0 \
+\
+For questions or feedback concerning the 
+\i in silico
+\i0  challenge, please use the DREAM discussion forum (\cf2 \ul \ulc2 http://wiki.c2b2.columbia.edu/dream/discuss\cf0 \ulnone ) or contact Daniel Marbach (\cf2 \ul \ulc2 dmarbach@mit.edu\cf0 \ulnone ).\
+\
+\
+---\
+Daniel Marbach\
+21 Nov 2009}

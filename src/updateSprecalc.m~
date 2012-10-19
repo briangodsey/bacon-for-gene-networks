@@ -1,0 +1,49 @@
+function[ par ] = updateSprecalc( D, par, priors, info )
+
+expect = getExpectations( par );
+sigAug = zeros( size(expect.sig)+[1 1] );
+sigAug(2:end,2:end) = expect.sig;
+sigAug(1,1) = 10^8;
+
+for i = 1:info.nclus
+
+    % calculate the row of the precision for this cluster
+    temp1 = repmat(0,info.nclus+1,info.nclus+1);
+    for tsum = 2:(info.Tmax+1)
+        FmeanAug = [ 1; par.Fmean(:,tsum-1) ];
+        temp1 = temp1 + FmeanAug * expect.sig(i,i) * FmeanAug';
+    end
+    sprec = temp1;
+    
+    % calculate the mean for this cluster
+    temp2 = repmat(0,info.Tmax+1,info.nclus+1);
+    for tsum = 2:(info.Tmax+1)
+        FmeanAugBefore = [ 1; par.Fmean(:,tsum-1) ];
+        FmeanAfter =  par.Fmean(i,tsum);
+        
+        FmeanAfter
+        sigAug
+        FmeanAugBefore'
+        
+        temp2(tsum,:) = FmeanAfter * sig FmeanAugBefore';
+    end
+    sum2 = sum(temp2,1);
+    
+    %i
+    %temp1
+    %temp2
+
+    %priors.Smean(i+1,:)*priors.Sprec{i+1} + sum2
+    %inv(par.Sprec{i+1})
+    %par.Sprec{i+1}
+    
+    smean = sum2 / sprec;
+    
+    smean
+    
+    par.Smean(i,:) = smean(2:end);
+    par.Sconstmean(i) = smean(1);
+    
+end
+
+end

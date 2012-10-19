@@ -1,0 +1,36 @@
+function[ par ] = updateS( D, par, priors, info )
+
+expect = getExpectations( par );
+
+for i = 1:info.nclus
+
+    % calculate the row of the precision for this cluster
+    temp1 = repmat(0,info.nclus+1,info.nclus+1);
+    for tsum = 2:(info.Tmax+1)
+        FmeanAug = [ 1; par.Fmean(:,tsum-1) ];
+        temp1 = temp1 + FmeanAug * expect.sig(i,i) * FmeanAug';
+    end
+    par.Sprec{i+1} = priors.Sprec{i+1} + temp1;
+    
+    % calculate the mean for this cluster
+    temp2 = repmat(0,info.Tmax+1,info.nclus+1);
+    for tsum = 2:(info.Tmax+1)
+        FmeanAugBefore = [ 1; par.Fmean(:,tsum-1) ];
+        FmeanAfter = par.Fmean(:,tsum);
+        temp2(tsum,:) = FmeanAfter(i) * expect.sig(i,i) * FmeanAugBefore';
+    end
+    sum2 = sum(temp2,1);
+    
+    i;
+    temp1;
+    temp2;
+
+    priors.Smean(i+1,:)*priors.Sprec{i+1} + sum2;
+    inv(par.Sprec{i+1});
+    par.Sprec{i+1};
+    
+    par.Smean(i+1,:) =  ( priors.Smean(i+1,:)*priors.Sprec{i+1} + sum2 ) / par.Sprec{i+1} ;
+    
+end
+
+end

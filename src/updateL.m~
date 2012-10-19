@@ -1,0 +1,16 @@
+function[ par ] = updateL( D, par, priors, info )
+
+%expect = getExpectations( par );
+expSq = getExpOfSquares( par );
+
+par.Lshape = priors.Lshape + 0.5 * info.G * sum(sum(info.N));
+
+mumat = par.mumean(info.time+1,:);
+mumatSq = expSq.mu(info.time+1,:);
+
+temp = sum(sum(D.^2)) + sum(sum(mumatSq)) - 2 * sum(sum(D.*mumat));
+
+% abs to correct rounding error for large numbers of clusters
+par.Lscale = abs( priors.Lscale + 0.5 * temp );
+
+end

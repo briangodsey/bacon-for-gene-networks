@@ -1,0 +1,8 @@
+function[ par ] = updateSIGscaleHYP( D, par, priors, info )
+
+expect = getExpectations( par );
+
+par.SIGscaleHYPshape = priors.SIGscaleHYPshape + sum(sum(priors.SIGshape));
+par.SIGscaleHYPscale = priors.SIGscaleHYPscale + sum(sum(expect.SIG));
+
+end

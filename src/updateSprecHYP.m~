@@ -1,0 +1,17 @@
+function[ par ] = updateSprecHYP( D, par, priors, info )
+
+expect = getExpectations( par );
+
+par.SprecHYPshape = priors.SprecHYPshape + 0.5*info.nclus^2;
+
+SprecMat = zeros(info.nclus);
+for i = 1:info.nclus
+    SprecMat(i,:) = diag(par.Sprec{i});
+end
+expSsquared = par.Smean.^2 + 1./SprecMat;
+expSxShyp = par.Smean * par.SmeanHYPmean;
+expSmeanHYPsq = par.SmeanHYPmean^2 + 1/par.SmeanHYPprec;
+
+par.SprecHYPscale = priors.SprecHYPscale + ;
+
+end

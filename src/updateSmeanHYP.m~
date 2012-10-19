@@ -1,0 +1,10 @@
+function[ par ] = updateSmeanHYP( D, par, priors, info )
+
+expect = getExpectations( par );
+
+par.SmeanHYPprec = expect.SmeanHYPdoublePREC * (1 + info.n;
+par.SmeanHYPmean = (expect.SmeanHYPdoublePREC*priors.SmeanHYPmean ...
+    + sum(sum(par.SmeanMiddleGuyprec .* par.SmeanMiddleGuymean)) ) ...
+    / par.SmeanHYPprec;
+
+end

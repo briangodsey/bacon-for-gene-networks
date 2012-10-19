@@ -1,0 +1,95 @@
+function[ par ] = updateF( t, D, par, priors, info )
+
+expect = getExpectations( par );
+%tnow = info.time == t;
+tind = t+1;
+
+% augment the sig matrix with a row and column of zeros
+sigAug = zeros( size(expect.sig) + [1 1] );
+sigAug(2:end,2:end) = expect.sig;
+sigAug(1,1) = 10^-5;  % add this to avoid near-sigularity in result
+
+
+%% update Fprec
+
+if t == min(info.tuniq)
+    % if t is the first time point in the model
+    ppart1 = priors.Fprec{tind};
+else
+    ppart1 = expect.sig;
+end
+
+
+if t == max(info.tuniq)
+    % if t is the last time point in the model
+    ppart2 = 0;
+else
+    temp = expect.S' * sigAug * expect.S;
+    % cut that extra row and column out
+    ppart2 = temp(2:end,2:end);
+end
+
+if sum(t==info.tuniq)>0
+    % if the time point t has data
+    ppart3 = par.mship * diag(expect.K) * diag(expect.gam) * par.mship';
+else
+    ppart3 = 0;
+end
+
+ppart1;
+ppart2;
+ppart3;
+par.Fprec{tind} = ppart1 + ppart2 + ppart3;
+
+%% update Fmean (uses current Fprec just calculated)
+if t == min(info.tuniq)
+    % if t is the first time point in the model
+    mpart1 = priors.Fprec{tind} * priors.Fmean(:,tind);
+else
+    FmeanAug = [ 1; priors.Fmean(:,tind-1) ];  % CHANGE BACK TO PAR.FMEAN
+    newFmean = expect.S * FmeanAug;
+    % get rid of the extra row
+    mpart1 = expect.sig * newFmean(2:end,:);
+end
+
+if t == max(info.tuniq)
+    % if t is the last time point in the model
+    mpart2 = 0;
+else
+    % augment the column of Fmean
+    FmeanAug = [ 1; priors.Fmean(:,tind+1) ];   % CHANGE BACK TO PAR.FMEAN
+
+    temp = expect.S' * sigAug * FmeanAug;
+    mpart2 = temp(2:end,:);
+    %ppart2
+    %ppart2\mpart2
+end
+
+if sum(t==info.tuniq)>0
+    % if the time point t has data
+    mpart3 = par.mship * diag(expect.K) * diag(expect.gam) * expect.mu(tind,:)';
+else
+    mpart3 = 0;
+end
+
+sigAug = zeros( size(expect.sig) + [1 1] );
+sigAug(2:end,2:end) = expect.sig;
+sigAug(1,1) = 10^-5;
+%sigAug
+if tind<8
+FmeanAug = [ 1; priors.Fmean(:,tind+1) ];   % CHANGE BACK TO PAR.FMEAN
+end
+
+%t
+%ppart1\mpart1
+ppart2
+mpart2
+%(expect.S'*sigAug*expect.S)\(expect.S'*sigAug*FmeanAug)
+(expect.S'*sigAug*expect.S)
+(expect.S'*sigAug*FmeanAug)
+%ppart3\mpart3
+par.Fprec{tind} \ (mpart1+mpart2+mpart3);
+par.Fmean(:,tind) = par.Fprec{tind} \ (mpart1+mpart2+mpart3);
+par.Fmean
+
+end

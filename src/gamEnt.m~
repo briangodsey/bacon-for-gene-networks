@@ -1,0 +1,5 @@
+function [ ent ] = gamEnt( shape, scale )
+
+ent = shape + ln(scale) + gammaln(shape) + 
+
+end

@@ -1,0 +1,27 @@
+function[ par ] = updateGAM( D, par, priors, info )
+
+par = updateGAMscaleHYP( D, par, priors, info );
+
+expect = getExpectations( par );
+%%expSq = getExpOfSquares( par );
+
+gsmat = zeros(size(par.gamscale));
+for i = 1:info.nclus
+  for tind = info.Tdatind;
+    ftind = info.Tdat(tind)+1;
+    gsmat(i,tind) = par.mship(i,:) ...
+	* ( par.mumean(tind,:).^2 + 1./par.muprec(tind,:) ...
+	   + par.Fmean(i,ftind)^2 + 1/par.Fprec{ftind}(i,i) ...
+	   - 2 * par.mumean(tind,:)*par.Fmean(i,ftind) )';
+  end
+end
+
+% put the pieces together for the parameter update
+par.gamshape = priors.gamshape ...
+    + 0.5*repmat(sum(par.mship,2),1,length(info.Tdat));
+
+par.gamscale = expect.gamscaleHYP + 0.5*gsmat;
+
+
+
+end

@@ -1,0 +1,14 @@
+function[ par ] = updateSmeanMiddleGuy( D, par, priors, info )
+
+%expect = getExpectations( par );
+
+SprecMAT = zeros(info.nclus,info.nclus);
+for i = 1:info.nclus
+    SprecMAT(i,:) = diag(par.Sprec{i})';
+end
+par.SmeanMiddleGuyprec = priors.SmeanHYPprec + SprecMAT;
+
+par.SmeanMiddleGuymean = (priors.SmeanHYPprec*priors.SmeanHYPmean ...
+    + SprecMAT .* par.Smean) / par.SmeanMiddleGuyprec;
+
+end

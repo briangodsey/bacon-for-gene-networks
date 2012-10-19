@@ -1,0 +1,135 @@
+function[ par ] = getMembership( par, priors, info, shuffle, D )
+
+expect = getExpectations( par );
+
+%% %% check to see if two clusters are the same
+%% for i = 2:info.nclus
+%%   for j = 1:i-1
+%%     if( all( abs(par.Fmean(i,:)./par.Fmean(j,:)-1)<0.05 ) )
+%%        par.Fmean(i,:) = 2*(rand(1,size(par.Fmean,2))-0.5);
+%%     end
+%%   end
+%% end
+
+mship = zeros( info.nclus, info.G );
+
+%% soft Bayesian clustering
+temp = zeros(info.nclus,info.G);
+for g = 1:info.G
+  mus = par.mumean(:,g);
+  muprecs = diag(par.muprec(:,g));
+  for i = 1:info.nclus
+    expgam = diag(expect.gam(i,:));
+    Fmeans = par.Fmean(i,info.Tdat+1)';
+    Fprecs = zeros(length(info.Tdat));
+    for tind = info.Tdatind
+      Fprecs(tind,tind) = par.Fprec{info.Tdat(tind)+1}(i,i);
+    end
+
+    temp(i,g) = (-0.5*length(info.Tdat))*log(2*pi) ...
+	+ 0.5* sum(gamExpLogx(par.gamshape(i,:), ...
+			 par.gamscale(i,:))) ...
+	- 0.5 * ( mus'*expgam*mus + trace(expgam/muprecs) ...
+		 + Fmeans'*expgam*Fmeans + trace(expgam/Fprecs) ...
+		 - 2*mus'*expgam*Fmeans );
+    end
+end
+logllh = log(priors.mship) + temp;
+
+% for i = 1:info.nclus
+%     logrow = repmat(logllh(i,:),info.nclus,1);
+%     mship(i,:) = 1 ./ sum(exp(logllh-logrow),1);
+% end
+
+%%exp(logllh)
+for g = 1:info.G
+  llhrow = logllh(:,g);
+  grow = exp(llhrow-max(llhrow));
+  %% if all(grow==0) || sum(grow>0.99*max(grow))>1
+  %%   grow(logllh(:,g)==max(logllh(:,g))) = 1;
+  %% end
+  %% if sum( grow>0.99*max(grow) ) > 1
+  %%   ind = find( grow>0.95*max(grow) );
+  %%   grow(ind(mod(g,length(ind))+1)) = 2*max(grow);
+  %% end
+  mship(:,g) = grow/sum(grow);
+end
+
+
+%%143
+%%par.mumean
+%%par.Fmean(:,info.Tdat+1)
+%%(par.mumean/par.mship)'
+%%par.Fmean(:,info.Tdat+1) - (par.mumean/par.mship)'
+%%187
+
+%% expect.gam
+%% logllh
+%% mship
+
+%% clustmemb = sum(mship,2);
+%% [ clustmemb sum(expect.gam,2) ]
+
+if shuffle
+  %% if a cluster is empty
+  clustmemb = sum(mship>0.5,2);
+  emptyclusters = find( clustmemb ==0  )';
+  if( size(emptyclusters,2) ~= 0 )
+    numemptyclusters = length(emptyclusters)
+    for i = emptyclusters
+      clustmemb = sum(mship,2);
+      biggestclust = find(clustmemb>mean(clustmemb));
+      bigclustermemb = find(max(mship(biggestclust,:),[],1)>0.1);
+      maxlogllh = max(logllh);
+      %%loneliestgene = find( maxlogllh == min(maxlogllh(clustmemb==max(clustmemb))) );
+      loneliestgene = find(maxlogllh==min(maxlogllh(bigclustermemb)));
+      mship(:,loneliestgene) = 0;
+      mship(i,loneliestgene) = 1;
+      maxlogllh(loneliestgene) = max(maxlogllh)+1;
+      %%clustmemb = sum(mship,2)
+    end
+  end
+end
+
+%% clustmemb = sum(mship,2);
+%% [ clustmemb sum(expect.gam,2) ]
+
+
+% % correct for the problem where all likelihoods are too small so that they
+% % sum to zero, giving improper membership values
+% for i = find(tempsum==0)
+%     % assign equal membership to all clusters
+%     mship(:,i) = 1/info.nclus;
+% end
+
+%% hard (Bayesian) clustering (based on likelihood, not distance)
+% for i = 1:info.G
+%     % or assign to the cluster with the highest likelihood
+%     % needs logA, logD, and logllh from above
+%     mship(:,i) = logllh(:,i)==max(logllh(:,i));
+% end
+
+%% hard clustering with kmeans (not working well)
+
+% for g = 1:info.G
+%     %for j = 1:info.nclus
+%     [ M I ] = min( sum( (repmat(par.mumean(:,g),1,info.nclus) - par.Fmean(:,info.tuniq+1)').^2 ) );
+%     %end
+%     mship(I,g) = 1;
+% end
+
+% [idx cent sumd ptd ] = kmeans(par.mumean(info.tuniq,:)',info.nclus,'start',par.Fmean(:,info.tuniq+1),'emptyaction','singleton','distance','sqEuclidean');
+% for g = 1:info.G
+%     mship(idx(g),g) = 1;
+% end
+
+%% end
+
+%% logllh
+%% mship
+%% expect.gam
+%% [ sum(mship,2) sum(mship>0.5,2) ]
+
+par.mship = mship;
+
+end

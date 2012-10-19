@@ -1,0 +1,49 @@
+function [priors] = setpriors( D, info )
+
+smallnum = 1e-4;
+largenum = 1e4;
+
+priors.mship = repmat(1/info.nclus, info.nclus, info.G);
+
+%priors.mumean = repmat(0,info.Tmax+1,info.G);
+%priors.muprec = repmat(smallnum,info.Tmax+1,info.G);
+
+priors.Lshape = smallnum;
+priors.Lscale = smallnum;
+
+%% priors.SmeanHYPmean = 0;
+%% priors.SmeanHYPprec = smallnum;
+%% priors.SmeanHYPdoublePRECshape = 1;
+%% priors.SmeanHYPdoublePRECscale = 1;
+%% priors.SprecHYPshape = 1;
+%% priors.SprecHYPscale = 1;
+
+priors.Smean = zeros(info.nclus);
+priors.Sprec = {};
+for i = 1:info.nclus
+  priors.Sprec{i} = smallnum*eye(info.nclus);
+end
+
+priors.Sconstmean = zeros(info.nclus,1);
+priors.Sconstprec = repmat(smallnum,info.nclus,1);
+
+% the multivariate Gaussian cluster centers
+% for Fmean, add T+1 for convenience; it stays zero
+priors.Fmean1 = zeros(info.nclus, 1);
+priors.Fprec1 = smallnum*eye(info.nclus);
+
+% the parameters of the precisions of the multivariate Gaussian clusters
+%%priors.gamshape = repmat( 1, info.nclus, length(info.Tdat) );
+priors.gamshape = 1;
+
+% the hyperparameters of the beta/scale on the gamma dist of par.gam
+priors.gamscaleHYPshape = smallnum; %info.Tmax;
+priors.gamscaleHYPscale = smallnum; %info.Tmax;
+
+%%priors.SIGshape = repmat(smallnum^2,1,info.nclus);
+priors.SIGshape = 1;
+
+priors.SIGscaleHYPshape = smallnum;
+priors.SIGscaleHYPscale = smallnum;
+
+end
