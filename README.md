@@ -1,5 +1,7 @@
-How to get started with BACON:
-==============================
+Getting started with BACON
+==========================
+
+BACON is a hybrid dynamic Bayesian network and clustering algorithm, using variational Bayesian fitting methods, for inferring gene regulatory networks from time-series data.
 
 A scientific paper describing the algorithm and some results can be found in [PLoS ONE at this link](http://dx.plos.org/10.1371/journal.pone.0068358).
 
