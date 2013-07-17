@@ -39,7 +39,10 @@ Please contact me through:
 https://github.com/briangodsey/bacon-for-genetic-networks
 
 
+Want to contribute?
+-------------------
 
+Feel free to fork this repo, submit pull requests, etc! I'm always happy to collaborate.
 
 
 
