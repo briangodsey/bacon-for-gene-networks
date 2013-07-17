@@ -36,7 +36,7 @@ Questions?
 ----------
 
 Please contact me through:
-https://github.com/briangodsey/bacon-for-genetic-networks
+https://github.com/briangodsey/bacon-for-gene-networks
 
 
 Want to contribute?
